@@ -1,0 +1,102 @@
+---
+format_version: '11'
+default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+project_type: other
+workflows:
+  primary:
+    steps:
+    - git-clone@8: {}
+    - script@1:
+        title: Install Appium
+        inputs:
+        - content: |+
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            # write your script here
+            npm install -g appium@next
+
+            appium plugin install execute-driver
+
+            appium driver install xcuitest
+
+            appium driver install uiautomator2
+
+            appium driver list --installed
+
+    - script@1:
+        title: Install Robot Framework
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            # write your script here
+            pip3 install robotframework robotframework-appiumlibrary
+    - script@1:
+        title: Launch Emulator
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            # write your script here
+            open /Applications/Xcode.app/Contents/Developer/Applications/Simulator.app &
+    - script@1:
+        title: execute Robot Framework tests
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            # write your script here
+
+            robot --outputDir rf-results tests
+    - script@1:
+        inputs:
+        - content: |-
+            #!/usr/bin/env bash
+            # fail if any commands fails
+            set -e
+            # make pipelines' return status equal the last command to exit with a non-zero status, or zero if all commands exit successfully
+            set -o pipefail
+            # debug log
+            set -x
+
+            # write your script here
+            ls -l
+
+            zip appiumlog.zip *.log *.txt
+            zip test-report.zip rf-results/*
+
+            cp appiumlog.zip $BITRISE_DEPLOY_DIR
+            cp test-report.zip $BITRISE_DEPLOY_DIR
+
+            ls -l $BITRISE_DEPLOY_DIR
+        title: Export Appium log
+        is_always_run: true
+    - deploy-to-bitrise-io@2: {}
+meta:
+  bitrise.io:
+    stack: osx-xcode-14.3.x-ventura
+    machine_type_id: g2-m1.4core
